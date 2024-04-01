@@ -110,7 +110,11 @@
             {{ formatNumber(scope.row.Rating) }}
           </template>
         </el-table-column>
-        <el-table-column></el-table-column>
+        <el-table-column label="Status">
+          <template #default="scope">
+            <el-checkbox :checked="scope.row.Completed"></el-checkbox>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
     <div class="footer">
@@ -127,19 +131,28 @@
 </template>
 x
 <script lang="ts" setup>
-import { reactive, onMounted, ref } from 'vue';
+import { reactive, onMounted, ref, computed } from 'vue';
 import axios, { AxiosResponse } from 'axios';
 import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
-import { auth } from '@/firebase';
+import { auth, db } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  collection,
+  doc,
+  query as query_by,
+  where,
+  getDoc,
+  getDocs,
+} from 'firebase/firestore';
 import { useAuth } from '@vueuse/firebase/useAuth';
+import { useFirestore } from '@vueuse/firebase/useFirestore';
 
 const url = './data.json';
 
 const { isAuthenticated, user } = useAuth(auth);
-
 const signIn = () => signInWithPopup(auth, new GoogleAuthProvider());
+
 interface Problem {
   ContestID_en: string;
   ContestID_zh: string;
@@ -154,6 +167,7 @@ interface Problem {
   ProblemHrefEN: string | null;
   ContestHrefEN: string | null;
   ContestHrefZH: string | null;
+  Completed?: boolean;
 }
 interface SortInfo {
   prop: 'Rating' | 'ID';
@@ -187,7 +201,9 @@ onMounted(() => {
       problemSetAll.push(item);
       filterProblemSet.push(item);
     });
-    currentChange();
+    setTimeout(() => {
+      currentChange();
+    }, 1000);
   });
 });
 
@@ -211,14 +227,31 @@ function formatNumber(rating: number) {
   return Math.floor(rating);
 }
 
-function currentChange() {
+async function currentChange() {
   problemSetShow.length = 0;
   let no = currentPage.value;
   let size = pageSize.value;
   let total = filterProblemSet.length;
   for (let i = (no - 1) * size; i < Math.min(total, no * size); i++) {
-    problemSetShow.push(filterProblemSet[i]);
+    problemSetShow.push(await formatStatus(filterProblemSet[i]));
   }
+  console.log(problemSetShow);
+}
+
+async function formatStatus(problem: Problem): Promise<Problem> {
+  const statusQuery = query_by(
+    collection(db, 'problems'),
+    where('user_id', '==', user.value?.uid),
+    where('problem_id', '==', String(problem.ID))
+  );
+  const post = await getDocs(statusQuery);
+  console.log(post);
+  console.log(post.empty);
+  if (!post.empty) {
+    console.log('HEOOO');
+    problem.Completed = true;
+  }
+  return problem;
 }
 
 function sizeChange() {
