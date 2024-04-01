@@ -1,14 +1,13 @@
 <template>
   <div>
     <div class="head">
-      <div v-if="isAuthenticated">
-        <p>{{ user?.displayName }}</p>
+      <div v-if="user">
+        <p>{{ user.displayName }}</p>
         <button @click="signOut(auth)">Sign out</button>
       </div>
       <div v-else>
         <button @click="signIn">Sign in with google</button>
       </div>
-
       <!-- <div class="language">
         <el-dropdown style="margin-right: 5%" @command="switchLocale">
           <span class="el-dropdown-link">
@@ -112,7 +111,9 @@
         </el-table-column>
         <el-table-column label="Status">
           <template #default="scope">
-            <el-checkbox :checked="scope.row.Completed"></el-checkbox>
+            <el-checkbox
+              @change="(value: boolean) => onChecked(value, scope.row)"
+              :checked="scope.row.Completed"></el-checkbox>
           </template>
         </el-table-column>
       </el-table>
@@ -131,11 +132,11 @@
 </template>
 x
 <script lang="ts" setup>
-import { reactive, onMounted, ref, computed } from 'vue';
+import { reactive, onMounted, ref, computed, onBeforeMount } from 'vue';
 import axios, { AxiosResponse } from 'axios';
 import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
-import { auth, db } from '@/firebase';
+import { db } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import {
   collection,
@@ -144,13 +145,17 @@ import {
   where,
   getDoc,
   getDocs,
+  addDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@vueuse/firebase/useAuth';
 import { useFirestore } from '@vueuse/firebase/useFirestore';
+import { useFirebaseAuth, getCurrentUser, useCurrentUser } from 'vuefire';
+
+const auth = useFirebaseAuth()!;
 
 const url = './data.json';
 
-const { isAuthenticated, user } = useAuth(auth);
 const signIn = () => signInWithPopup(auth, new GoogleAuthProvider());
 
 interface Problem {
@@ -188,9 +193,13 @@ let contestIndex = ref(null);
 const problemSetAll: Array<Problem> = reactive([]);
 const problemSetShow: Array<Problem> = reactive([]);
 const filterProblemSet: Array<Problem> = reactive([]);
+let user: any = ref(null);
 let keyword = ref('');
 let currentPage = ref(1);
-onMounted(() => {
+// onBeforeMount(() => {
+//   user = useCurrentUser();
+// });
+onMounted(async () => {
   axios.get(url).then((res: AxiosResponse<Array<Problem>>) => {
     const problems = res.data;
     problems.forEach((item) => {
@@ -201,9 +210,7 @@ onMounted(() => {
       problemSetAll.push(item);
       filterProblemSet.push(item);
     });
-    setTimeout(() => {
-      currentChange();
-    }, 1000);
+    currentChange();
   });
 });
 
@@ -228,30 +235,57 @@ function formatNumber(rating: number) {
 }
 
 async function currentChange() {
+  if (user.value === null) {
+    user = await getCurrentUser();
+  }
   problemSetShow.length = 0;
   let no = currentPage.value;
   let size = pageSize.value;
   let total = filterProblemSet.length;
+  const completedProblems = await formatStatus();
   for (let i = (no - 1) * size; i < Math.min(total, no * size); i++) {
-    problemSetShow.push(await formatStatus(filterProblemSet[i]));
+    const problem = filterProblemSet[i];
+    if (completedProblems.includes(problem.ID)) {
+      problem.Completed = true;
+    }
+    problemSetShow.push(problem);
   }
   console.log(problemSetShow);
 }
 
-async function formatStatus(problem: Problem): Promise<Problem> {
+async function formatStatus(): Promise<number[]> {
+  const completedProblems: number[] = [];
   const statusQuery = query_by(
     collection(db, 'problems'),
-    where('user_id', '==', user.value?.uid),
-    where('problem_id', '==', String(problem.ID))
+    where('user_id', '==', user.uid)
   );
-  const post = await getDocs(statusQuery);
-  console.log(post);
-  console.log(post.empty);
-  if (!post.empty) {
-    console.log('HEOOO');
-    problem.Completed = true;
+  const problems = await getDocs(statusQuery);
+  problems.forEach((rawProblem) => {
+    const problem = rawProblem.data();
+    if (problem.completed) {
+      completedProblems.push(problem.problem_id);
+    }
+  });
+  return completedProblems;
+}
+
+async function onChecked(isChecked: boolean, problem: Problem) {
+  const problems = await getDocs(
+    query_by(
+      collection(db, 'problems'),
+      where('user_id', '==', user.uid),
+      where('problem_id', '==', problem.ID)
+    )
+  );
+  if (problems.empty) {
+    await addDoc(collection(db, 'problems'), {
+      problem_id: problem.ID,
+      user_id: user.uid,
+      completed: true,
+    });
+  } else {
+    await updateDoc(problems.docs[0].ref, { completed: isChecked });
   }
-  return problem;
 }
 
 function sizeChange() {

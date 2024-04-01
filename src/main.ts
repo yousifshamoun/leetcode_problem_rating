@@ -7,7 +7,8 @@ import 'element-plus/dist/index.css';
 import { createI18n } from 'vue-i18n';
 import messages from './locale';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
-
+import { VueFire, VueFireAuth } from 'vuefire';
+import { app as firebase_app } from './firebase';
 const defaultLocale = navigator.language.substring(0, 2) || 'en';
 const locale = localStorage.getItem('locale');
 const i18n = createI18n({
@@ -20,3 +21,10 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component);
 }
 app.use(store).use(i18n).use(router).use(elementPlus).mount('#app');
+app.use(VueFire, {
+  firebaseApp: firebase_app,
+  modules: [
+    // ... other modules
+    VueFireAuth(),
+  ],
+});
