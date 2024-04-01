@@ -112,6 +112,7 @@
         <el-table-column label="Status">
           <template #default="scope">
             <el-checkbox
+              :disabled="!!!user"
               @change="(value: boolean) => onChecked(value, scope.row)"
               :checked="scope.row.Completed"></el-checkbox>
           </template>
@@ -139,6 +140,7 @@ import { useI18n } from 'vue-i18n';
 import { db } from '@/firebase';
 import {
   GoogleAuthProvider,
+  onAuthStateChanged,
   signInWithPopup,
   signInWithRedirect,
   signOut,
@@ -217,6 +219,12 @@ onMounted(() => {
   });
 });
 
+onMounted(() => {
+  onAuthStateChanged(auth, async () => {
+    user.value = await getCurrentUser();
+  });
+});
+
 function sortChange(s: SortInfo) {
   if (s.prop == null) {
     sortInfo.order = 'descending';
@@ -239,7 +247,7 @@ function formatNumber(rating: number) {
 
 async function currentChange() {
   if (user.value === null) {
-    user = await getCurrentUser();
+    user.value = await getCurrentUser();
   }
   problemSetShow.length = 0;
   let no = currentPage.value;
@@ -258,6 +266,10 @@ async function currentChange() {
 
 async function formatStatus(): Promise<number[]> {
   const completedProblems: number[] = [];
+  console.log(user);
+  if (!user || !user.uid) {
+    return completedProblems;
+  }
   const statusQuery = query_by(
     collection(db, 'problems'),
     where('user_id', '==', user.uid)
