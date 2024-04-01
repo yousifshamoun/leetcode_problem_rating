@@ -148,9 +148,7 @@ import {
   addDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { useAuth } from '@vueuse/firebase/useAuth';
-import { useFirestore } from '@vueuse/firebase/useFirestore';
-import { useFirebaseAuth, getCurrentUser, useCurrentUser } from 'vuefire';
+import { useFirebaseAuth, getCurrentUser } from 'vuefire';
 
 const auth = useFirebaseAuth()!;
 
