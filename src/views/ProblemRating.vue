@@ -196,10 +196,10 @@ const filterProblemSet: Array<Problem> = reactive([]);
 let user: any = ref(null);
 let keyword = ref('');
 let currentPage = ref(1);
-// onBeforeMount(() => {
-//   user = useCurrentUser();
-// });
-onMounted(async () => {
+onBeforeMount(async () => {
+  user.value = await getCurrentUser();
+});
+onMounted(() => {
   axios.get(url).then((res: AxiosResponse<Array<Problem>>) => {
     const problems = res.data;
     problems.forEach((item) => {
