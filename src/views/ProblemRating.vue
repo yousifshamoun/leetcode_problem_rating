@@ -1,7 +1,15 @@
 <template>
   <div>
     <div class="head">
-      <div class="language">
+      <div v-if="isAuthenticated">
+        <p>{{ user?.displayName }}</p>
+        <button @click="signOut(auth)">Sign out</button>
+      </div>
+      <div v-else>
+        <button @click="signIn">Sign in with google</button>
+      </div>
+
+      <!-- <div class="language">
         <el-dropdown style="margin-right: 5%" @command="switchLocale">
           <span class="el-dropdown-link">
             {{ $t("lang") }}
@@ -16,15 +24,14 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-      </div>
+      </div> -->
       <div class="filter">
         <el-form :inline="true">
           <el-form-item :label="$t('keyword')">
             <el-input
               :placeholder="$t('placeholder')"
               v-model="keyword"
-              @keyup.enter="query"
-            />
+              @keyup.enter="query" />
           </el-form-item>
           <el-form-item :label="$t('contestNumber')">
             <el-input-number
@@ -33,8 +40,7 @@
               :max="9999"
               :controls="false"
               style="width: 80px"
-              @keyup.enter="query"
-            />
+              @keyup.enter="query" />
           </el-form-item>
           <el-form-item :label="$t('ratingInterval')">
             <el-input-number
@@ -43,8 +49,7 @@
               :max="9999"
               :controls="false"
               style="width: 80px"
-              @keyup.enter="query"
-            />
+              @keyup.enter="query" />
           </el-form-item>
           <el-form-item> - </el-form-item>
           <el-form-item>
@@ -54,12 +59,11 @@
               :max="9999"
               :controls="false"
               style="width: 80px"
-              @keyup.enter="query"
-            />
+              @keyup.enter="query" />
           </el-form-item>
           <el-form-item>
             <el-button type="danger" @click="reset"
-              >{{ $t("reset") }}
+              >{{ $t('reset') }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -72,8 +76,7 @@
         stripe
         style="width: 90%"
         :table-layout="'auto'"
-        @sort-change="sortChange"
-      >
+        @sort-change="sortChange">
         <el-table-column prop="ID" label="ID" width="180" sortable="custom" />
         <el-table-column :label="$t('problemName')">
           <template #default="scope">
@@ -107,6 +110,7 @@
             {{ formatNumber(scope.row.Rating) }}
           </template>
         </el-table-column>
+        <el-table-column></el-table-column>
       </el-table>
     </div>
     <div class="footer">
@@ -117,20 +121,25 @@
         :total="filterProblemSet.length"
         v-model:current-page="currentPage"
         @current-change="currentChange"
-        @size-change="sizeChange"
-      />
+        @size-change="sizeChange" />
     </div>
   </div>
 </template>
-
+x
 <script lang="ts" setup>
-import { reactive, onMounted, ref } from "vue";
-import axios, { AxiosResponse } from "axios";
-import { ElMessage } from "element-plus";
-import { useI18n } from "vue-i18n";
+import { reactive, onMounted, ref } from 'vue';
+import axios, { AxiosResponse } from 'axios';
+import { ElMessage } from 'element-plus';
+import { useI18n } from 'vue-i18n';
+import { auth } from '@/firebase';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { useAuth } from '@vueuse/firebase/useAuth';
 
-const url = "./data.json";
+const url = './data.json';
 
+const { isAuthenticated, user } = useAuth(auth);
+
+const signIn = () => signInWithPopup(auth, new GoogleAuthProvider());
 interface Problem {
   ContestID_en: string;
   ContestID_zh: string;
@@ -147,7 +156,7 @@ interface Problem {
   ContestHrefZH: string | null;
 }
 interface SortInfo {
-  prop: "Rating" | "ID";
+  prop: 'Rating' | 'ID';
   order: string;
 }
 
@@ -156,25 +165,25 @@ let locale = i18n.locale;
 let left = ref(null);
 let right = ref(null);
 let sortInfo = reactive({
-  prop: "Rating",
-  order: "descending",
+  prop: 'Rating',
+  order: 'descending',
 } as SortInfo);
-const pageSizeCache = localStorage.getItem("pageSize");
+const pageSizeCache = localStorage.getItem('pageSize');
 let pageSize = ref(pageSizeCache ? parseInt(pageSizeCache) : 15);
 let contestIndex = ref(null);
 const problemSetAll: Array<Problem> = reactive([]);
 const problemSetShow: Array<Problem> = reactive([]);
 const filterProblemSet: Array<Problem> = reactive([]);
-let keyword = ref("");
+let keyword = ref('');
 let currentPage = ref(1);
 onMounted(() => {
   axios.get(url).then((res: AxiosResponse<Array<Problem>>) => {
     const problems = res.data;
     problems.forEach((item) => {
-      item.ProblemHrefZH = "https://leetcode.cn/problems/" + item.TitleSlug;
-      item.ProblemHrefEN = "https://leetcode.com/problems/" + item.TitleSlug;
-      item.ContestHrefZH = "https://leetcode.cn/contest/" + item.ContestSlug;
-      item.ContestHrefEN = "https://leetcode.com/contest/" + item.ContestSlug;
+      item.ProblemHrefZH = 'https://leetcode.cn/problems/' + item.TitleSlug;
+      item.ProblemHrefEN = 'https://leetcode.com/problems/' + item.TitleSlug;
+      item.ContestHrefZH = 'https://leetcode.cn/contest/' + item.ContestSlug;
+      item.ContestHrefEN = 'https://leetcode.com/contest/' + item.ContestSlug;
       problemSetAll.push(item);
       filterProblemSet.push(item);
     });
@@ -184,8 +193,8 @@ onMounted(() => {
 
 function sortChange(s: SortInfo) {
   if (s.prop == null) {
-    sortInfo.order = "descending";
-    sortInfo.prop = "Rating";
+    sortInfo.order = 'descending';
+    sortInfo.prop = 'Rating';
   } else {
     sortInfo.order = s.order;
     sortInfo.prop = s.prop;
@@ -195,7 +204,7 @@ function sortChange(s: SortInfo) {
 
 function switchLocale(locale: string) {
   i18n.locale.value = locale;
-  localStorage.setItem("locale", locale);
+  localStorage.setItem('locale', locale);
 }
 
 function formatNumber(rating: number) {
@@ -214,14 +223,14 @@ function currentChange() {
 
 function sizeChange() {
   currentPage.value = 1;
-  localStorage.setItem("pageSize", String(pageSize.value));
+  localStorage.setItem('pageSize', String(pageSize.value));
   currentChange();
 }
 
 function query() {
   if (left.value != null && right.value != null && right.value < left.value) {
     ElMessage.error({
-      message: "left must less than right",
+      message: 'left must less than right',
       duration: 1000,
     });
     return;
@@ -240,7 +249,7 @@ function query() {
       }
     }
     if (contestIndex.value != null) {
-      let index = parseInt(item.ContestSlug.replace(/\D/gi, ""));
+      let index = parseInt(item.ContestSlug.replace(/\D/gi, ''));
       if (index != contestIndex.value) {
         return;
       }
@@ -254,7 +263,7 @@ function query() {
     filterProblemSet.push(item);
   });
   filterProblemSet.sort((a: Problem, b: Problem) => {
-    if (sortInfo.order === "descending") {
+    if (sortInfo.order === 'descending') {
       return b[sortInfo.prop] - a[sortInfo.prop];
     } else {
       return a[sortInfo.prop] - b[sortInfo.prop];
@@ -264,12 +273,12 @@ function query() {
 }
 
 function reset() {
-  keyword.value = "";
+  keyword.value = '';
   contestIndex.value = null;
   left.value = null;
   right.value = null;
-  sortInfo.order = "descending";
-  sortInfo.prop = "Rating";
+  sortInfo.order = 'descending';
+  sortInfo.prop = 'Rating';
   query();
 }
 </script>

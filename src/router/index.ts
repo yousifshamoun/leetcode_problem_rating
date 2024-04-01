@@ -1,16 +1,16 @@
-import { createRouter, createWebHashHistory, RouteRecordRaw } from "vue-router";
-import ProblemRating from "../views/ProblemRating.vue";
+import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router';
+import ProblemRating from '../views/ProblemRating.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: "/",
-    name: "index",
+    path: '/',
+    name: 'index',
     component: ProblemRating,
   },
 ];
 
 const router = createRouter({
-  history: createWebHashHistory("./"),
+  history: createWebHashHistory('./'),
   routes,
 });
 
