@@ -137,7 +137,12 @@ import axios, { AxiosResponse } from 'axios';
 import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 import { db } from '@/firebase';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+} from 'firebase/auth';
 import {
   collection,
   doc,
@@ -154,7 +159,7 @@ const auth = useFirebaseAuth()!;
 
 const url = './data.json';
 
-const signIn = () => signInWithPopup(auth, new GoogleAuthProvider());
+const signIn = () => signInWithRedirect(auth, new GoogleAuthProvider());
 
 interface Problem {
   ContestID_en: string;
