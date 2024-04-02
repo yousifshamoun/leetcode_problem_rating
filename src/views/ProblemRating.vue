@@ -266,40 +266,40 @@ async function currentChange() {
 
 async function formatStatus(): Promise<number[]> {
   const completedProblems: number[] = [];
-  console.log(user);
-  if (!user || !user.uid) {
-    return completedProblems;
+  if (user.value && user.value.uid) {
+    const statusQuery = query_by(
+      collection(db, 'problems'),
+      where('user_id', '==', user.value.uid)
+    );
+    const problems = await getDocs(statusQuery);
+    problems.forEach((rawProblem) => {
+      const problem = rawProblem.data();
+      if (problem.completed) {
+        completedProblems.push(problem.problem_id);
+      }
+    });
   }
-  const statusQuery = query_by(
-    collection(db, 'problems'),
-    where('user_id', '==', user.uid)
-  );
-  const problems = await getDocs(statusQuery);
-  problems.forEach((rawProblem) => {
-    const problem = rawProblem.data();
-    if (problem.completed) {
-      completedProblems.push(problem.problem_id);
-    }
-  });
   return completedProblems;
 }
 
 async function onChecked(isChecked: boolean, problem: Problem) {
-  const problems = await getDocs(
-    query_by(
-      collection(db, 'problems'),
-      where('user_id', '==', user.uid),
-      where('problem_id', '==', problem.ID)
-    )
-  );
-  if (problems.empty) {
-    await addDoc(collection(db, 'problems'), {
-      problem_id: problem.ID,
-      user_id: user.uid,
-      completed: true,
-    });
-  } else {
-    await updateDoc(problems.docs[0].ref, { completed: isChecked });
+  if (user.value && user.value.uid) {
+    const problems = await getDocs(
+      query_by(
+        collection(db, 'problems'),
+        where('user_id', '==', user.value.uid),
+        where('problem_id', '==', problem.ID)
+      )
+    );
+    if (problems.empty) {
+      await addDoc(collection(db, 'problems'), {
+        problem_id: problem.ID,
+        user_id: user.value.uid,
+        completed: true,
+      });
+    } else {
+      await updateDoc(problems.docs[0].ref, { completed: isChecked });
+    }
   }
 }
 
