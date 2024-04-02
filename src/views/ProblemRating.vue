@@ -8,22 +8,6 @@
       <div v-else>
         <button @click="signIn">Sign in with google</button>
       </div>
-      <!-- <div class="language">
-        <el-dropdown style="margin-right: 5%" @command="switchLocale">
-          <span class="el-dropdown-link">
-            {{ $t("lang") }}
-            <el-icon class="el-icon--right">
-              <arrow-down />
-            </el-icon>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item :command="'en'">English</el-dropdown-item>
-              <el-dropdown-item :command="'zh'">简体中文</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div> -->
       <div class="filter">
         <el-form :inline="true">
           <el-form-item :label="$t('keyword')">
@@ -131,7 +115,7 @@
     </div>
   </div>
 </template>
-x
+
 <script lang="ts" setup>
 import { reactive, onMounted, ref, computed, onBeforeMount } from 'vue';
 import axios, { AxiosResponse } from 'axios';
@@ -201,10 +185,8 @@ const filterProblemSet: Array<Problem> = reactive([]);
 let user: any = ref(null);
 let keyword = ref('');
 let currentPage = ref(1);
-onBeforeMount(async () => {
-  user.value = await getCurrentUser();
-});
-onMounted(() => {
+
+function fetchData() {
   axios.get(url).then((res: AxiosResponse<Array<Problem>>) => {
     const problems = res.data;
     problems.forEach((item) => {
@@ -217,12 +199,18 @@ onMounted(() => {
     });
     currentChange();
   });
-});
+}
 
-onMounted(() => {
-  onAuthStateChanged(auth, async () => {
-    user.value = await getCurrentUser();
-  });
+onAuthStateChanged(auth, (firebase_user) => {
+  if (firebase_user) {
+    user.value = firebase_user;
+    fetchData();
+  } else {
+    user.value = null;
+    problemSetShow.length = 0;
+    problemSetAll.length = 0;
+    filterProblemSet.length = 0;
+  }
 });
 
 function sortChange(s: SortInfo) {
