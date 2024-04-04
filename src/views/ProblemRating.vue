@@ -297,7 +297,6 @@ async function onChecked(isChecked: boolean, problem: Problem) {
     }
   }
 }
-// TODO: Batch update the completed columns
 
 function sizeChange() {
   currentPage.value = 1;
