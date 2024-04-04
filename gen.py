@@ -1,5 +1,10 @@
 import json
+import requests
 
+r = requests.get('https://raw.githubusercontent.com/zerotrac/leetcode_problem_rating/main/ratings.txt')
+ratings_txt = r.text
+with open("ratings.txt", "w") as ratings:
+    ratings.write(ratings_txt)
 raw_data = [[y for y in x.strip().split("\t") if y] for x in open("ratings.txt")]
 title = [x.replace(" ", "") for x in raw_data[0]] + ["ContestID_en"] + ["ContestID_zh"]
 body = raw_data[1:]

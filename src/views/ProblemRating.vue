@@ -210,6 +210,10 @@ onAuthStateChanged(auth, (firebase_user) => {
     problemSetShow.length = 0;
     problemSetAll.length = 0;
     filterProblemSet.length = 0;
+    ElMessage.error({
+      message: 'Please sign in using the top-left button',
+      duration: 4000,
+    });
   }
 });
 
@@ -271,6 +275,7 @@ async function formatStatus(): Promise<number[]> {
 }
 
 async function onChecked(isChecked: boolean, problem: Problem) {
+  // check if the problem is already in the users database
   if (user.value && user.value.uid) {
     const problems = await getDocs(
       query_by(
@@ -279,6 +284,7 @@ async function onChecked(isChecked: boolean, problem: Problem) {
         where('problem_id', '==', problem.ID)
       )
     );
+    // if not, let's create the document
     if (problems.empty) {
       await addDoc(collection(db, 'problems'), {
         problem_id: problem.ID,
@@ -286,10 +292,12 @@ async function onChecked(isChecked: boolean, problem: Problem) {
         completed: true,
       });
     } else {
+      // otherwise, just update the completed field
       await updateDoc(problems.docs[0].ref, { completed: isChecked });
     }
   }
 }
+// TODO: Batch update the completed columns
 
 function sizeChange() {
   currentPage.value = 1;
