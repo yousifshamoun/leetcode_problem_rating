@@ -143,7 +143,7 @@ import { useFirebaseAuth, getCurrentUser } from 'vuefire';
 
 const auth = useFirebaseAuth()!;
 
-const url = './data.json';
+const url = 'https://zerotrac.github.io/leetcode_problem_rating/data.json';
 
 const signIn = () => signInWithRedirect(auth, new GoogleAuthProvider());
 
